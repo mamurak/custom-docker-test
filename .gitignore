@@ -1,6 +1,4 @@
-**/.csv
-**/.pt
-
-**/__pycache__/
+*.csv
+*.pt
 
 !./data/raw/news.csv
