@@ -1,33 +1,27 @@
-FROM ubuntu:20.04
+FROM quay.io/thoth-station/s2i-minimal-f34-py39-notebook:v0.3.0
 
-ENV TZ=Europe/Rome
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+LABEL name="s2i-pytorch-nltk-notebook:latest" \
+      summary="PyTorch NLTK Jupyter Notebook Source-to-Image for Python 3.9 applications." \
+      description="Notebook image based on Source-to-Image.These images can be used in OpenDatahub JupterHub." \
+      io.k8s.description="Notebook image based on Source-to-Image.These images can be used in OpenDatahub JupterHub." \
+      io.k8s.display-name="PyTorch NLTK Notebook Python 3.9-ubi8 S2I" \
+      io.openshift.expose-services="8080:http" \
+      io.openshift.tags="python,python39" \
+      authoritative-source-url="https://quay.io/mmurakam/s2i-pytorch-nltk-notebook" \
+      io.openshift.s2i.build.commit.ref="main" \
+      io.openshift.s2i.build.source-location="https://github.com/mamurak/custom-docker-test" \
+      io.openshift.s2i.build.image="quay.io/thoth-station/s2i-minimal-f34-py39-notebook:v0.3.0"
 
-RUN apt-get update && apt-get install -y \
-  build-essential \
-  software-properties-common \
-  curl \
-  wget \
-  git
+USER root
+WORKDIR /tmp/
 
-# Install Miniconda
-ENV CONDA_DIR /opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
-ENV PATH=$CONDA_DIR/bin:$PATH
+# Copying custom packages
+COPY requirements.txt /tmp/
 
-# Activate environment
-COPY env.yml /env.yml
-RUN conda env create --file /env.yml
-RUN echo "source activate env-cpu" > ~/.bashrc
-ENV PATH /opt/conda/envs/env/bin:$PATH
+# Install custom packages
+RUN micropipenv install --deploy 
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV MY_ROOT_APPLICATION /custom-docker-test
-WORKDIR $MY_ROOT_APPLICATION
+WORKDIR /opt/app-root/src
+USER 1001
 
-CMD ["bash"]
-
-
-
-
+CMD /opt/app-root/bin/start-singleuser.sh --ip=0.0.0.0 --port=8080
